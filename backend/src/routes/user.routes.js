@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { listUsers, createUser, updateUser, approveDoctor } from '../controllers/user.controller.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
+import { audit } from '../middleware/audit.middleware.js';
+const router = Router();
+router.use(protect, authorize('admin'));
+router.get('/', listUsers);
+router.post('/', audit('create','users'), createUser);
+router.patch('/:id', audit('update','users'), updateUser);
+router.patch('/:id/approve-doctor', audit('approve','users'), approveDoctor);
+export default router;

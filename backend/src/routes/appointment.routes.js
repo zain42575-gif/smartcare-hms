@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { listAppointments, createAppointment, updateAppointment } from '../controllers/appointment.controller.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
+import { audit } from '../middleware/audit.middleware.js';
+const router = Router();
+router.use(protect);
+router.get('/', authorize('admin','doctor','receptionist','patient'), listAppointments);
+router.post('/', authorize('admin','receptionist','patient'), audit('create','appointments'), createAppointment);
+router.patch('/:id', authorize('admin','doctor','receptionist'), audit('update','appointments'), updateAppointment);
+export default router;

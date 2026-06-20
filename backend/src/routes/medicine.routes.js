@@ -1,0 +1,11 @@
+import { Router } from 'express';
+import { listMedicines, createMedicine, updateMedicine, issueMedicine } from '../controllers/medicine.controller.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
+import { audit } from '../middleware/audit.middleware.js';
+const router = Router();
+router.use(protect, authorize('admin','pharmacist','doctor'));
+router.get('/', listMedicines);
+router.post('/', authorize('admin','pharmacist'), audit('create','medicines'), createMedicine);
+router.patch('/:id', authorize('admin','pharmacist'), audit('update','medicines'), updateMedicine);
+router.post('/issue', authorize('pharmacist'), audit('issue','medicines'), issueMedicine);
+export default router;

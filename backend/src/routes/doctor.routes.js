@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { listDoctors, createDoctor, updateDoctor } from '../controllers/doctor.controller.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
+import { audit } from '../middleware/audit.middleware.js';
+const router = Router();
+router.use(protect);
+router.get('/', listDoctors);
+router.post('/', authorize('admin'), audit('create','doctors'), createDoctor);
+router.patch('/:id', authorize('admin'), audit('update','doctors'), updateDoctor);
+export default router;

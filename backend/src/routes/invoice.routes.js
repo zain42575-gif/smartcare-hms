@@ -1,0 +1,10 @@
+import { Router } from 'express';
+import { listInvoices, createInvoice, updateInvoice } from '../controllers/invoice.controller.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
+import { audit } from '../middleware/audit.middleware.js';
+const router = Router();
+router.use(protect, authorize('admin','accountant','receptionist','patient'));
+router.get('/', listInvoices);
+router.post('/', audit('create','invoices'), createInvoice);
+router.patch('/:id', audit('update','invoices'), updateInvoice);
+export default router;

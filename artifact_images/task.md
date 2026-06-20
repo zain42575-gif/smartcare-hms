@@ -1,0 +1,3 @@
+- `[x]` Frontend: Map separate portal routes (`/login`, `/admin`, `/doctor`, `/receptionist`, `/pharmacist`, `/accountant`) in `App.jsx`
+- `[x]` Frontend: Configure `Login.jsx` to handle the `portal` prop dynamically (set title, lock role, filter autofills)
+- `[x]` Verification: Test compilation and verify the role-locked sign-in interfaces
