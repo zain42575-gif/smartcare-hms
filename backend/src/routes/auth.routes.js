@@ -7,7 +7,7 @@ import { loginSchema, registerPatientSchema, registerDoctorSchema } from '../val
 
 const strictLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  limit: 10,
+  limit: process.env.NODE_ENV === 'production' ? 10 : 100,
   message: { success: false, message: 'Too many authentication attempts, please try again later.' }
 });
 

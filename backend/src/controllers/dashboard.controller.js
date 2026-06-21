@@ -27,31 +27,38 @@ export const dashboardSummary = asyncHandler(async (req, res) => {
   if (req.user.role === 'patient') {
     const patient = await Patient.findOne({ user: req.user._id });
     const patientFilter = { patient: patient?._id || null };
-    const [appointments, upcomingAppointments, records, pendingBills, labReports] = await Promise.all([
+    const MedicalRecord = (await import('../models/MedicalRecord.js')).default;
+    const [appointments, upcomingAppointments, records, pendingBills, labReports, upcomingList, recentRecords, pendingBillsList] = await Promise.all([
       Appointment.countDocuments(patientFilter),
       Appointment.countDocuments({ ...patientFilter, appointmentDate: { $gte: today }, status: { $in: ['pending','confirmed'] } }),
-      import('../models/MedicalRecord.js').then(({ default: MedicalRecord }) => MedicalRecord.countDocuments(patientFilter)),
+      MedicalRecord.countDocuments(patientFilter),
       Invoice.countDocuments({ ...patientFilter, paymentStatus: { $ne: 'paid' } }),
       LabReport.countDocuments(patientFilter),
+      Appointment.find({ ...patientFilter, appointmentDate: { $gte: today }, status: { $in: ['pending','confirmed'] } }).sort({ appointmentDate: 1 }).limit(3).populate({path: 'doctor', populate: {path: 'user', select: 'name'}}),
+      MedicalRecord.find(patientFilter).sort({ createdAt: -1 }).limit(3).populate({path: 'doctor', populate: {path: 'user', select: 'name'}}),
+      Invoice.find({ ...patientFilter, paymentStatus: { $ne: 'paid' } }).sort({ createdAt: -1 }).limit(3)
     ]);
-    return ok(res, { appointments, upcomingAppointments, records, pendingBills, labReports }, 'Patient dashboard summary');
+    return ok(res, { appointments, upcomingAppointments, records, pendingBills, labReports, upcomingList, recentRecords, pendingBillsList }, 'Patient dashboard summary');
   }
   if (req.user.role === 'pharmacist') {
-    const [medicines, lowStock, expired, totalQuantity] = await Promise.all([
+    const [medicines, lowStock, expired, totalQuantity, lowStockList, expiringList] = await Promise.all([
       Medicine.countDocuments(),
       Medicine.countDocuments({ $expr: { $lte: ['$quantity', '$lowStockLimit'] } }),
       Medicine.countDocuments({ expiryDate: { $lt: today } }),
       Medicine.aggregate([{ $group: { _id: null, quantity: { $sum: '$quantity' } } }]),
+      Medicine.find({ $expr: { $lte: ['$quantity', '$lowStockLimit'] } }).limit(5),
+      Medicine.find({ expiryDate: { $lt: new Date(new Date().setDate(today.getDate() + 90)), $gte: today } }).limit(5).sort({ expiryDate: 1 })
     ]);
-    return ok(res, { medicines, lowStock, expired, totalQuantity: totalQuantity[0]?.quantity || 0 }, 'Pharmacist dashboard summary');
+    return ok(res, { medicines, lowStock, expired, totalQuantity: totalQuantity[0]?.quantity || 0, lowStockList, expiringList }, 'Pharmacist dashboard summary');
   }
   if (req.user.role === 'accountant') {
-    const [pendingInvoices, paidInvoices, revenueAgg] = await Promise.all([
+    const [pendingInvoices, paidInvoices, revenueAgg, recentInvoicesList] = await Promise.all([
       Invoice.countDocuments({ paymentStatus: { $ne: 'paid' } }),
       Invoice.countDocuments({ paymentStatus: 'paid' }),
       Invoice.aggregate([{ $project: { total: { $subtract: [{ $sum: { $map: { input: '$items', as: 'i', in: { $multiply: ['$$i.quantity','$$i.unitPrice'] } } } }, '$discount'] }, paidAmount: 1 } }, { $group: { _id: null, revenue: { $sum: '$paidAmount' }, billed: { $sum: '$total' } } }]),
+      Invoice.find().sort({ createdAt: -1 }).limit(5).populate({path: 'patient', populate: {path: 'user', select: 'name'}})
     ]);
-    return ok(res, { pendingInvoices, paidInvoices, revenue: revenueAgg[0]?.revenue || 0, billed: revenueAgg[0]?.billed || 0 }, 'Accountant dashboard summary');
+    return ok(res, { pendingInvoices, paidInvoices, revenue: revenueAgg[0]?.revenue || 0, billed: revenueAgg[0]?.billed || 0, recentInvoicesList }, 'Accountant dashboard summary');
   }
   if (req.user.role === 'receptionist') {
     const [patients, todayAppointments, pendingAppointments, doctors] = await Promise.all([
@@ -63,12 +70,14 @@ export const dashboardSummary = asyncHandler(async (req, res) => {
     return ok(res, { patients, todayAppointments, pendingAppointments, availableDoctors: doctors }, 'Receptionist dashboard summary');
   }
   if (req.user.role === 'lab_technician') {
-    const [pendingReports, completedReports, totalReports] = await Promise.all([
+    const [pendingReports, completedReports, totalReports, pendingRequestsList, completedReportsList] = await Promise.all([
       LabReport.countDocuments({ status: 'pending' }),
       LabReport.countDocuments({ status: 'completed' }),
       LabReport.countDocuments(),
+      LabReport.find({ status: 'pending' }).sort({ createdAt: 1 }).limit(5).populate({path: 'patient', populate: {path: 'user', select: 'name'}}),
+      LabReport.find({ status: 'completed' }).sort({ updatedAt: -1 }).limit(5).populate({path: 'patient', populate: {path: 'user', select: 'name'}})
     ]);
-    return ok(res, { pendingReports, completedReports, totalReports }, 'Lab Technician dashboard summary');
+    return ok(res, { pendingReports, completedReports, totalReports, pendingRequestsList, completedReportsList }, 'Lab Technician dashboard summary');
   }
   const [users, patients, doctors, todayAppointments, lowStock, invoices, revenueAgg, labReports] = await Promise.all([
     User.countDocuments(), Patient.countDocuments(), Doctor.countDocuments(),
