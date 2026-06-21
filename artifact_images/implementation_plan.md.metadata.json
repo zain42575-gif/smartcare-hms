@@ -1,6 +1,0 @@
-{
-  "artifactType": "ARTIFACT_TYPE_IMPLEMENTATION_PLAN",
-  "summary": "Implementation plan to create separate portal routes on the frontend for each user role (e.g. /admin, /doctor, /receptionist, etc.) and configure the Login component to automatically bind credentials to the matching portal role.",
-  "updatedAt": "2026-06-16T20:56:48.494982800Z",
-  "requestFeedback": true
-}
