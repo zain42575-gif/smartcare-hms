@@ -153,8 +153,21 @@ export default function Login({ portal }) {
   const update = (setter) => (e) => setter(prev => ({ ...prev, [e.target.name]: e.target.value }));
   const openView = (nextView) => { setView(nextView); setError(''); setMessage(''); };
 
+  const handleAutoFill = () => {
+    const demoEmails = {
+      admin: 'admin@alhidayathospital.com',
+      doctor: 'hidayat@alhidayathospital.com',
+      receptionist: 'receptionist@alhidayathospital.com',
+      pharmacist: 'pharmacy@alhidayathospital.com',
+      accountant: 'accountant@alhidayathospital.com',
+      lab_technician: 'labtechnician@alhidayathospital.com',
+      patient: 'patient@alhidayathospital.com'
+    };
+    setEmail(demoEmails[portal] || 'patient@alhidayathospital.com');
+    setPassword('Password@123');
+  };
 
-  const portalName = portal ? portal.charAt(0).toUpperCase() + portal.slice(1) : '';
+  const portalName = portal ? portal.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : '';
 
   return (
     <div className="login-page">
@@ -193,6 +206,12 @@ export default function Login({ portal }) {
                 required
               />
             </label>
+
+            <div style={{ textAlign: 'right', marginTop: '-5px', marginBottom: '15px' }}>
+              <button type="button" onClick={handleAutoFill} style={{ background: 'none', border: 'none', color: '#3b82f6', fontSize: '0.85rem', cursor: 'pointer', padding: 0, fontWeight: '500' }}>
+                Auto-fill Demo Credentials
+              </button>
+            </div>
             
             <button className="primary" style={{ marginTop: '10px' }}>Login as {portalName}</button>
             
